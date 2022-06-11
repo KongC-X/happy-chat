@@ -1,5 +1,6 @@
 $(function() {
     // io-client
+    // 客户端通过 socket.io 模块的实例化对象 io 建立与服务端的连接
     // 连接成功会触发服务器端的connection事件
     var socket = io(); 
 
@@ -10,6 +11,7 @@ $(function() {
       }
     });
     $('#nameBtn').click(inputName);
+
     // 登录成功，隐藏登录层
     socket.on('loginSuc', ()=> { 
       $('.name').hide(); 
@@ -22,10 +24,10 @@ $(function() {
     function inputName() {
       var imgN = Math.floor(Math.random()*4)+1; // 随机分配头像
       if($('#name').val().trim()!=='')
-          socket.emit('login', { 
+          socket.emit('login', {  // 触发服务器端登录事件
             name: $('#name').val(),
             img: 'image/user' + imgN + '.jpg'
-          });  // 触发登录事件
+          });
       return false; 
     }
 
@@ -52,6 +54,7 @@ $(function() {
     });
 
     // 发送消息
+    // 点击按钮或回车键发送消息
     $('#sub').click(sendMsg);
     $('#m').keyup((ev)=> {
       if(ev.which == 13) {
@@ -60,7 +63,9 @@ $(function() {
     });
 
     // 接收消息
-    socket.on('receiveMsg', (obj)=> {  
+    // 服务器端接受到来自用户的消息后会触发客户端的 receiveMsg 事件，并将用户发送的消息作为参数传递，该事件会向聊天面板添加聊天内容
+    // 由于发送的是图片，所以对页面布局难免有影响，为了页面美观客户端在接收其他用户发送的消息的时候会先判断发送的是文本还是图片，根据不同的结果展示不同布局。判断的方法是在客户发送消息的时候传入一个 type，根据 type 的值来确实发送内容的类型。所以上面发送图片代码中触发了 sendMsg 事件，传入参数多了一个 type 属性。
+    socket.on('receiveMsg', (obj)=> {   // 将接收到的消息渲染到面板上
       // 发送为图片
       if(obj.type == 'img') {
         $('#messages').append(`
@@ -72,6 +77,7 @@ $(function() {
             </div>
           </li>
         `); 
+        // 滚动条总是在最底部
         $('#messages').scrollTop($('#messages')[0].scrollHeight);
         return;
       }
@@ -106,7 +112,7 @@ $(function() {
     // 发送消息
     var color = '#000000'; 
     function sendMsg() { 
-      if($('#m').val() == '') {
+      if($('#m').val() == '') { // 输入消息为空
         alert('请输入内容！');
         return false;
       }
@@ -153,6 +159,8 @@ $(function() {
       socket.emit('disconnect');
     });
  
+    // 发送表情其实很简单，将表情图片放在 li 中，当用户点击 li 时就将表情的 src 中的序号解析出来，用 [emoji + 表情序号] 的格式存放在聊天框里，点击发送后再解析为 src。就是一个解析加还原的过程，这一过程中我们的服务器代码不变，需要改变的是客户端监听的 receiveMsg 事件
+
     // 渲染表情
     init();
     function init() {
@@ -161,7 +169,7 @@ $(function() {
       }
     }
 
-    // 显示表情
+    // 显示表情选择面板
     $('#smile').click(()=> {
       $('.selectBox').css('display', "block");
     });
@@ -176,18 +184,20 @@ $(function() {
     $('.emoji li img').click((ev)=> {
         ev = ev || window.event;
         var src = ev.target.src;
-        var emoji = src.replace(/\D*/g, '').substr(6, 8);
-        var old = $('#m').val();
+        var emoji = src.replace(/\D*/g, '').substr(6, 8); // 提取序号
+        var old = $('#m').val(); // 用户输入的其他内容
         $('#m').val(old+'[emoji'+emoji+']');
         $('.selectBox').css('display', "none");
     });
 
+    // 当用户点击抖动按钮时会 emit 服务端的抖动事件，服务端会广播该事件使得每个客户端都会抖动窗口
     // 用户发送抖动
     $('.edit #shake').click(function() {
         socket.emit('shake');
     });
 
     // 用户发送图片
+    // 用了 fileReader 对象，可以将我们选中的文件已 64 位输出，然后将结果存放在 reader.result 中，我们选中图片之后，reader.result 就存放的是图片的 src
     $('#file').change(function() {
       var file = this.files[0];  // 上传单张图片
       var reader = new FileReader();
@@ -203,7 +213,7 @@ $(function() {
         socket.emit('sendMsg', {  // 发送
           msg: img,
           color: color,
-          type: 'img'
+          type: 'img' // 发送类型为img
         }); 
       };
       reader.readAsDataURL(file); // 读取为64位

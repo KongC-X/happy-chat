@@ -25,11 +25,14 @@
               <ul id="messages"></ul>
               <form action="">
                   <div class="edit"> 
+                    <!-- 得益于 html5 的 input 新特性，可以通过 type 为 color 的 input 调用系统调色板 -->
+                    <!-- $('#color').val();为选中颜色，格式为 #FFCCBB -->
                     <input type="color" id="color" value="#000000">
                     <i title="自定义字体颜色" id="font" class="fa fa-font">
                     </i><i title="双击取消选择" class="fa fa-smile-o" id="smile">
                     </i><i title="单击页面震动" id="shake" class="fa fa-bolt">
                     </i>
+                    <!-- 首先是图片按钮样式，发送图片的按钮是 type 为 file 的 input。这里有一个改变样式的小技巧，那就是将 input 的透明度设为 0，z-index 为 5，将你想要得样式放在 div 中，z-index 设为 1 覆盖在 input 上。 -->
                     <input type="file" id="file">
                     <i class="fa fa-picture-o" id="img"></i>
                     <div class="selectBox"> 
